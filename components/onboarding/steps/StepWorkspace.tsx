@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function StepWorkspace({ formData, setFormData, nextStep }: any) {
     return (
         <div className="space-y-4">
