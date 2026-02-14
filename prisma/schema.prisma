@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  role      String   @default("OWNER") // OWNER, STAFF
+  permissions String? // JSON string of permissions e.g. ["VIEW_INBOX", "MANAGE_BOOKINGS"]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  businessId String?
+  business   Business? @relation(fields: [businessId], references: [id])
+}
+
+model Business {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  address   String?
+  timeZone  String   @default("UTC")
+  supportEmail String?
+  availability String?  // JSON string of weekly schedule
+  status       String   @default("PENDING") // PENDING, ACTIVE
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  leads     Lead[]
+  bookings  Booking[]
+  inventory InventoryItem[]
+  messages  Message[]
+  integrations Integration[]
+  services  Service[]
+  forms     Form[]
+}
+
+model Service {
+  id          String   @id @default(uuid())
+  name        String
+  duration    Int      // in minutes
+  price       Float
+  location    String   @default("Remote") // Remote, In-Person, Phone
+  description String?
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  bookings    Booking[]
+  forms       Form[]
+  serviceResources ServiceResource[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Form {
+  id          String   @id @default(uuid())
+  title       String
+  fields      String   // JSON string defining fields
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  services    Service[]
+  bookingForms BookingForm[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Integration {
+  id        String   @id @default(uuid())
+  type      String   // "EMAIL", "SMS"
+  provider  String   // "RESEND", "TWILIO", "MOCK"
+  apiKey    String?
+  status    String   @default("ACTIVE") // ACTIVE, INACTIVE, FAILED
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Lead {
+  id        String   @id @default(uuid())
+  email     String
+  name      String?
+  source    String?
+  status    String   @default("NEW") // NEW, CONTACTED, CLOSED
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  bookings    Booking[]
+  message     Message[]
+  notes       String?   // For Notion-like customer notes
+  automationPaused Boolean @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Booking {
+  id          String   @id @default(uuid())
+  customerName String
+  customerEmail String
+  date        DateTime
+  status      String   @default("CONFIRMED")
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  serviceId   String?
+  service     Service? @relation(fields: [serviceId], references: [id])
+  bookingForms BookingForm[]
+  messages    Message[]
+  leadId      String?
+  lead        Lead?    @relation(fields: [leadId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model BookingForm {
+  id        String   @id @default(uuid())
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id])
+  formId    String
+  form      Form    @relation(fields: [formId], references: [id])
+  status    String  @default("PENDING") // PENDING, COMPLETED
+  data      String? // JSON string of submitted data
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model InventoryItem {
+  id        String   @id @default(uuid())
+  name      String
+  quantity  Int      @default(0)
+  threshold Int      @default(5)
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  serviceResources ServiceResource[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ServiceResource {
+  id              String        @id @default(uuid())
+  serviceId       String
+  service         Service       @relation(fields: [serviceId], references: [id])
+  inventoryItemId String
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  quantityUsed    Int           @default(1)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  sender    String   // "USER", "SYSTEM", "CUSTOMER"
+  type      String   // "EMAIL", "SMS"
+  read      Boolean  @default(false)
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  leadId    String?
+  lead      Lead?    @relation(fields: [leadId], references: [id])
+  bookingId String?
+  booking   Booking? @relation(fields: [bookingId], references: [id])
+  createdAt DateTime @default(now())
+}
