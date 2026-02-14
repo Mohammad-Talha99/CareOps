@@ -5,12 +5,12 @@ const prisma = new PrismaClient();
 
 export async function PATCH(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const body = await req.json();
         const { status } = body;
-        const bookingId = params.id;
+        const bookingId = (await params).id;
 
         if (!status) {
             return NextResponse.json({ error: "Missing status" }, { status: 400 });

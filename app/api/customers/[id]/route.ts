@@ -3,9 +3,9 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = params;
+        const { id } = await params;
         const customer = await prisma.lead.findUnique({
             where: { id },
             include: {
@@ -32,9 +32,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = params;
+        const { id } = await params;
         const body = await req.json();
         const { notes } = body;
 
