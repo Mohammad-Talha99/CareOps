@@ -7,23 +7,34 @@ import { Bell, Calendar, ClipboardCheck, MessageSquare, Package, AlertTriangle, 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-// Mock Business ID for MVP (In real app, get from auth/context)
-const MOCK_BUSINESS_ID = "8bb0493a-831a-4a5b-95e0-699f6eb1bab1"; // Matches seeded "Demo Wellness" business
-
 export default function DashboardPage() {
     const router = useRouter();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    // Ideally user ID comes from auth context
-    const businessId = MOCK_BUSINESS_ID;
+    const [businessId, setBusinessId] = useState<string | null>(null);
 
     useEffect(() => {
-        // Fetch dashboard stats
+        // 1. Fetch Business ID first
+        const fetchBusiness = async () => {
+            try {
+                const res = await fetch("/api/business");
+                if (res.ok) {
+                    const data = await res.json();
+                    setBusinessId(data.business.id);
+                }
+            } catch (e) {
+                console.error("Failed to fetch business ID", e);
+            }
+        };
+        fetchBusiness();
+    }, []);
+
+    useEffect(() => {
+        if (!businessId) return;
+
+        // 2. Fetch dashboard stats once we have businessId
         const fetchStats = async () => {
             try {
-                // In a real app, we might check if businessId exists/is loaded first
-                // For MVP, if we don't have businessId, we might fail or mock.
-                // Dynamic fetching:
                 const res = await fetch(`/api/dashboard/stats?businessId=${businessId}`);
                 if (res.ok) {
                     const data = await res.json();

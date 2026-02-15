@@ -16,17 +16,35 @@ export default function BookingsPage() {
     const [filter, setFilter] = useState("today"); // today, upcoming, all
     const [counts, setCounts] = useState({ today: 0, upcoming: 0, all: 0 });
 
-    const businessId = MOCK_BUSINESS_ID;
+    const [businessId, setBusinessId] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchBookings();
+        const fetchBusiness = async () => {
+            try {
+                const res = await fetch("/api/business");
+                if (res.ok) {
+                    const data = await res.json();
+                    setBusinessId(data.business.id);
+                }
+            } catch (e) {
+                console.error("Failed to fetch business ID", e);
+            }
+        };
+        fetchBusiness();
     }, []);
+
+    useEffect(() => {
+        if (businessId) {
+            fetchBookings();
+        }
+    }, [businessId]);
 
     useEffect(() => {
         filterBookings();
     }, [filter, bookings]);
 
     const fetchBookings = async () => {
+        if (!businessId) return;
         setLoading(true);
         try {
             const res = await fetch(`/api/bookings?businessId=${businessId}`);
